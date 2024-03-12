@@ -21,11 +21,16 @@ import { FriendsPopover } from "./components/FriendsPopover";
 import { Filters } from "./components/Filters";
 import { Modal } from "./Modal";
 
-const getCommunitites = () =>
-  new Promise<GetCommunitiesResponse>((resolve) => {
-    setTimeout(() => {
+const getCommunitites = (signal: AbortSignal) =>
+  new Promise<GetCommunitiesResponse>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
       resolve({ result: 1, data: mockCommunities });
     }, 1000);
+
+    signal.addEventListener("abort", () => {
+      clearTimeout(timeoutId);
+      reject(new Error("Request aborted: Reason - " + signal.reason));
+    });
   });
 
 export function App() {
@@ -39,7 +44,8 @@ export function App() {
   });
 
   useEffect(() => {
-    getCommunitites()
+    const { signal, abort } = new AbortController();
+    getCommunitites(signal)
       .then((response) => {
         if (!response.result) throw new Error("Failed get communities");
         if (!response.data) throw new Error("Data is empty");
@@ -48,8 +54,10 @@ export function App() {
       .catch((err) => {
         console.log(err);
       });
+    return () => {
+      abort("Component unmounted");
+    };
   }, []);
-
   // MODAL FILTERS logic
   const [activeModal, setActiveModal] = useState<"filters" | null>(null);
 
@@ -76,6 +84,47 @@ export function App() {
     });
   }, [filters, communities]);
   //
+  const CommunityCard = (community: Community) => (
+    <SimpleCell
+      key={community.id}
+      before={
+        <Avatar
+          size={100}
+          initials={community.name[0]}
+          src="#"
+          gradientColor={community.avatar_color}
+        />
+      }
+    >
+      <Title
+        level="2"
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+        }}
+      >
+        {community.name}
+        {community.closed && (
+          <Icon28LockOutline
+            width={20}
+            height={20}
+            title={"Закрытое сообщество"}
+          />
+        )}
+      </Title>
+
+      {community.members_count > 0 && (
+        <div style={{ display: "flex", gap: 4 }}>
+          <Icon36Users3Outline width={20} height={20} title={"Подписчики"} />
+          {community.members_count}
+        </div>
+      )}
+
+      {community.friends && <FriendsPopover friends={community.friends} />}
+    </SimpleCell>
+  );
 
   return (
     <AppRoot>
@@ -103,55 +152,7 @@ export function App() {
                 ></Filters>
               </Group>
               <Group header={<Header mode="secondary">Communities</Header>}>
-                <List>
-                  {filteredCommunities.map((community) => (
-                    <SimpleCell
-                      key={community.id}
-                      before={
-                        <Avatar
-                          size={100}
-                          initials={community.name[0]}
-                          src="#"
-                          gradientColor={community.avatar_color}
-                        />
-                      }
-                    >
-                      <Title
-                        level="2"
-                        style={{
-                          marginBottom: 16,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
-                        }}
-                      >
-                        {community.name}
-                        {community.closed && (
-                          <Icon28LockOutline
-                            width={20}
-                            height={20}
-                            title={"Закрытое сообщество"}
-                          />
-                        )}
-                      </Title>
-
-                      {community.members_count > 0 && (
-                        <div style={{ display: "flex", gap: 4 }}>
-                          <Icon36Users3Outline
-                            width={20}
-                            height={20}
-                            title={"Подписчики"}
-                          />
-                          {community.members_count}
-                        </div>
-                      )}
-
-                      {community.friends && (
-                        <FriendsPopover friends={community.friends} />
-                      )}
-                    </SimpleCell>
-                  ))}
-                </List>
+                <List>{filteredCommunities.map(CommunityCard)}</List>
               </Group>
             </Panel>
           </View>
