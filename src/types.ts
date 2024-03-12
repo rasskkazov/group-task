@@ -19,8 +19,10 @@ export interface User {
   last_name: string;
 }
 
+export const privateTypes = ["all", "public", "private"] as const;
+
 export type FiltersType = {
-  privateType: "all" | "public" | "private";
+  privateType: (typeof privateTypes)[number];
   colors: AvatarProps["gradientColor"][];
   withFriendsOnly: boolean;
 };

@@ -14,7 +14,7 @@ import {
 } from "@vkontakte/vkui";
 import { Icon24Dismiss } from "@vkontakte/icons";
 import { useState } from "react";
-import type { Community, FiltersType } from "./types";
+import { privateTypes, type Community, type FiltersType } from "./types";
 
 type ModalProps = {
   onClose: () => void;
@@ -38,12 +38,6 @@ export const Modal = (props: ModalProps) => {
   const curFilters = props.filters;
 
   const [selectedRadio, setSelectedRadio] = useState(curFilters.privateType);
-  const handleRadioChange = (event: any) => {
-    const newValue = event.target.value;
-    if (newValue === "all" || newValue === "public" || newValue === "private") {
-      setSelectedRadio(newValue);
-    }
-  };
 
   const [selectedColors, setSelectedColors] = useState(curFilters.colors);
   const handleColorsChange = (event: any) => {
@@ -86,30 +80,19 @@ export const Modal = (props: ModalProps) => {
       >
         <FormLayoutGroup>
           <FormItem top="Тип приватности">
-            <Radio
-              name="radio"
-              value="all"
-              checked={selectedRadio === "all"}
-              onChange={handleRadioChange}
-            >
-              Все
-            </Radio>
-            <Radio
-              name="radio"
-              value="public"
-              checked={selectedRadio === "public"}
-              onChange={handleRadioChange}
-            >
-              Открытые
-            </Radio>
-            <Radio
-              name="radio"
-              value="private"
-              checked={selectedRadio === "private"}
-              onChange={handleRadioChange}
-            >
-              Закрытые
-            </Radio>
+            {privateTypes.map((p) => (
+              <Radio
+                key={p}
+                name="radio"
+                value={p}
+                checked={selectedRadio === p}
+                onChange={() => {
+                  setSelectedRadio(p);
+                }}
+              >
+                {p}
+              </Radio>
+            ))}
           </FormItem>
           <FormItem top="Цвет">
             {Array.from(FILTERS_COLORS).map((value, index) => {
